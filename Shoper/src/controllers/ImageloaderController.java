@@ -9,27 +9,39 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.ResourceBundle;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.scene.Cursor;
 import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Pane;
+import javafx.scene.layout.RowConstraints;
 import shoper.Main;
+import utils.DirectoryListLoader;
+import utils.GridPaneImageLoader;
+import utils.LocatedFile;
+import utils.LocatedImage;
 
 
 public class ImageloaderController implements Initializable {
@@ -40,112 +52,74 @@ public class ImageloaderController implements Initializable {
     @FXML private ScrollPane mScrollPane;
     @FXML private GridPane mGridPane;
     
-    private ObservableList<File> mDirectoryList;
-    private File mFile;
+    public static final int GRIDPANE_COLUMNSNUMBER = 4;
     
-    private FileFilter directoryFilter = new FileFilter() {
-
-        @Override
-        public boolean accept(File pathname) {
-            return pathname.getName().indexOf(".") == -1 ? true : false;
-        }
-    };
+    private ObservableList<LocatedFile> mDirectoryList;
+    private File mLastFile;
     
-    private FileFilter imageFilter = new FileFilter() {
-
-        @Override
-        public boolean accept(File pathname) {
-            boolean isImage = false;
-            if (pathname.getName().indexOf(".jpg") != -1)
-                isImage = true;
-            if (pathname.getName().indexOf(".jpeg") != -1)
-                isImage = true;
-            if (pathname.getName().indexOf(".png") != -1)
-                isImage = true;
-            return isImage;
-        }
-    };
-    
-    private ChangeListener changeListener = new ChangeListener<Number>() {
-
-        @Override
-        public void changed(ObservableValue ov, Number value, Number newValue) {
-            File file = mDirectoryList.get(newValue.intValue());
-            changeDirectory(file);
-        }
+    private ChangeListener changeListener = (observableValue, oldValue, newValue) -> {
+        Number value = (Number) newValue;
+        changeDirectory(mDirectoryList.get(value.intValue()));
     }; 
+    
+    
+    public static void selectImage(String path) {
+        ProductsController.getmProductsController().selectImage(path);
+        Main.stopPage();
+    }
     
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        mDirectoryList = FXCollections.observableArrayList();
-        changeDirectory(new File("/"));  
-        mChoiceBox.getSelectionModel().selectedIndexProperty().addListener(changeListener);
-        mBack.setImage(getImage());
-        mSelectText.cursorProperty().setValue(Cursor.DEFAULT);
-        mScrollPane.setContent(mGridPane);
+        configViews();
+        configElements();
     }  
     
-    private void changeDirectory(File file) {
-        mFile = new File(file.getAbsolutePath());
-        mDirectoryList = createPathsObject(file);
-        mChoiceBox.setItems(mDirectoryList);
-    }
-    
-    private ObservableList<File> createPathsObject(File file) {
-        mSelectText.setText(file.toString());
-        File[] files = file.listFiles(directoryFilter);
-        generatemage(file);
-        ObservableList<File> fileList = FXCollections.observableArrayList();
-        fileList.addAll(Arrays.asList(files));     
-        return fileList;
-    }
-    
-    private void generatemage(File file) {
+    private void configViews() {
+        mBack.setImage(loadBackImage());
+        mSelectText.cursorProperty().setValue(Cursor.DEFAULT);
+        mScrollPane.setContent(mGridPane);
+
         mGridPane.setPadding(new Insets(10, 10, 10, 10));
-        File[] files = file.listFiles(imageFilter);
-        int row = 0;
-        int column = 0;
-        int chk = 0;
-        for (int i=0; i<files.length; i++) {
-            ImageView image = new ImageView(getImage(files[i].getAbsolutePath()));
-            
-            
-            image.setFitWidth(100);
-            image.setFitHeight(100);
-            image.setSmooth(true);
-            
-            if (column == 4) {
-                row+=10;
-                column = 0;
-            }
-            mGridPane.add(image, column, row);
-            //double height = mGridPane.getHeight()+100;
-            //mGridPane.resize(500, height);
-            column++;
-        }
+        alignPaneCellsSize();
     }
     
-    private Image getImage() {       
+    private void configElements() {
+        mDirectoryList = FXCollections.observableArrayList();
+        mChoiceBox.getSelectionModel().selectedIndexProperty().addListener(changeListener);
+        changeDirectory(new File("/"));
+    }
+    
+    private void changeDirectory(File file) {  
+        mLastFile = new LocatedFile(file.getAbsolutePath());
+        mSelectText.setText(file.toString());
+        
+        Platform.runLater(new GridPaneImageLoader(file, mGridPane));
+        
+        mDirectoryList = DirectoryListLoader.getDirectoryList(file);
+        mChoiceBox.setItems(mDirectoryList);
+    }    
+    
+    private Image loadBackImage() {       
         InputStream fileStream = null;
         fileStream = Main.class.getResourceAsStream("/files/back.png");
         Image image = new Image(fileStream);
         return image;                   
     }
     
-    private Image getImage(String path) {       
-        InputStream fileStream = null;
-        System.out.println(path);
-        try {
-            fileStream = new BufferedInputStream(new FileInputStream(path));
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(ImageloaderController.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        Image image = new Image(fileStream);
-        return image;                   
+    private void alignPaneCellsSize() {
+        for (RowConstraints constr : mGridPane.getRowConstraints())
+                constr.setMinHeight(120);
     }
     
     @FXML
     private void back() {
-        changeDirectory(mFile.getParentFile()); 
+        changeDirectory(mLastFile.getParentFile()); 
+    }
+    
+    @FXML
+    protected void onScrollHandler(ScrollEvent scrollEvent) {
+        System.out.println("QSQS");
+        mGridPane.setPadding(new Insets(10, 10, 10, 10));
     }
 }
+

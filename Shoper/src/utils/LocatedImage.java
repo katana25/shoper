@@ -18,6 +18,12 @@ public class LocatedImage extends Image {
     public String getPathc() {
         return null;
     }
+
+    public LocatedImage(InputStream in, double d, double d1, boolean bln, boolean bln1) {
+        super(in, d, d1, bln, bln1);
+    }
+    
+    
     
     public LocatedImage(InputStream stream, boolean defaultImage) {
         super(stream);

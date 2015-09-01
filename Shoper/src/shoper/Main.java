@@ -15,6 +15,7 @@ import javafx.stage.WindowEvent;
 public class Main extends Application {
    
     private Stage mMainStage;
+    private static Stage mImageStage;
     
     public static Main mMain;
     
@@ -37,6 +38,10 @@ public class Main extends Application {
         showPersonOverview();
     }
     
+    public static void stopPage() {
+        mImageStage.close();
+    }
+    
     public void showPersonOverview() {
         try {
             FXMLLoader loader = new FXMLLoader();
@@ -52,13 +57,13 @@ public class Main extends Application {
     
     public static <T extends Parent> void startStage(Class<T> paneClass, String layoutPatch) {
         try {
-            Stage stage = new Stage();            
+            mImageStage = new Stage();            
             FXMLLoader loader = new FXMLLoader();
             loader.setLocation(Main.class.getResource(layoutPatch));
             T pane = (T) loader.load();         
             Scene scene = new Scene(pane);
-            stage.setScene(scene);
-            stage.show();
+            mImageStage.setScene(scene);
+            mImageStage.show();
         } catch (IOException e) {
             e.printStackTrace();
         }

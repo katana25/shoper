@@ -1,6 +1,11 @@
 package controllers;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -36,13 +41,15 @@ public class ProductsController {
     @FXML private Button mRemoveBotton;
     
     private ObservableList<Product> productList;
+    private static ProductsController mProductsController;
     
     private ChangeListener mShowListener = (observable, oldValue, newValue) -> {
-            showProduct((Product) newValue);
+        showProduct((Product) newValue);
     };
     
     @FXML
     private void initialize() {
+        mProductsController = this;
         productList = getProductList();        
         mProductTable.setItems(productList);
         mProductsTitles.setCellValueFactory(cellData -> cellData.getValue().getTitle());        
@@ -136,6 +143,21 @@ public class ProductsController {
         
         image = new LocatedImage(fileStream);
         return image;                   
+    }
+    
+    public void selectImage(String path) {    
+        InputStream fileStream = null;   
+        try {
+            fileStream = new FileInputStream(new File(path));
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(ProductsController.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        LocatedImage image = new LocatedImage(fileStream);
+        mImageView.setImage(image);
+    }
+    
+    public static ProductsController getmProductsController() {
+        return mProductsController;
     }
     
     private LocatedImage getDefaultImage() {
