@@ -1,7 +1,15 @@
-/*
- * Empty Stylesheet file.
- */
-
 .mainFxmlClass {
+    
+}
 
+.background {
+    
+}
+
+.gridPane {
+    
+    -fx-background-color: #00ff00;
+    -fx-stroke-width: 400;
+    -fx-cell-size: 200;
+    -fx-content-display: center;
 }

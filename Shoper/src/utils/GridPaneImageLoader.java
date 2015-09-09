@@ -15,6 +15,7 @@ import javafx.fxml.FXML;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.RowConstraints;
 
 
 public class GridPaneImageLoader implements Runnable {
@@ -73,7 +74,7 @@ public class GridPaneImageLoader implements Runnable {
         ImageView imageView = new ImageView(image);    
         imageView.setFitWidth(100);
         imageView.setFitHeight(100);
-        imageView.setSmooth(true);   
+        imageView.setSmooth(true);  
         imageView.setOnMouseClicked((event) -> {
             ImageloaderController.selectImage(imageFile.getAbsolutePath());
         });
